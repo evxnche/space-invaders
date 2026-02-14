@@ -9,22 +9,19 @@ export class HUD {
   draw(score, highScore, lives, level) {
     const c = theme.colors;
 
-    this.renderer.drawText('SCORE', 20, 8, c.hud, 14);
-    this.renderer.drawText(score.toString().padStart(6, '0'), 20, 24, c.hudScore, 18);
+    // Left: SCORE + level below it
+    this.renderer.drawText('SCORE', 20, 6, c.hud, 12);
+    this.renderer.drawText(score.toString().padStart(6, '0'), 20, 20, c.hudScore, 16);
+    this.renderer.drawText(`LVL ${level}`, 20, 38, c.hud, 11);
 
-    this.renderer.drawText('HI-SCORE', this.renderer.width / 2, 8, c.hud, 14, 'center');
+    // Center: HI-SCORE
+    this.renderer.drawText('HI-SCORE', this.renderer.width / 2, 6, c.hud, 12, 'center');
     this.renderer.drawText(
       highScore.toString().padStart(6, '0'),
-      this.renderer.width / 2, 24, c.hudScore, 18, 'center'
+      this.renderer.width / 2, 20, c.hudScore, 16, 'center'
     );
 
-    this.renderer.drawText(`LVL ${level}`, this.renderer.width - 20, 8, c.hud, 14, 'right');
-
-    // Theme indicator
-    const icon = theme.mode === 'dark' ? '\u263D' : '\u2600';
-    this.renderer.drawText(icon, this.renderer.width - 20, 24, c.hud, 16, 'right');
-
-    // Lives
+    // Bottom: lives
     const lifeSprite = SPRITES.player;
     const lifeSize = this.renderer.getSpriteSize(lifeSprite, 0.6);
     this.renderer.drawText(`${lives}`, 20, this.renderer.height - 20, c.hudLives, 14);

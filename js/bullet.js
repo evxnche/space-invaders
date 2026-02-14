@@ -1,4 +1,4 @@
-import { theme } from './theme.js';
+const ENEMY_BULLET_SIZE = 16; // gcball.png rendered as square
 
 export class BulletManager {
   constructor(renderer) {
@@ -8,7 +8,11 @@ export class BulletManager {
 
   addEnemyBullet(x, y) {
     this.enemyBullets.push({
-      x: x - 1.5, y, w: 3, h: 12, speed: 250,
+      x: x - ENEMY_BULLET_SIZE / 2,
+      y,
+      w: ENEMY_BULLET_SIZE,
+      h: ENEMY_BULLET_SIZE,
+      speed: 250,
     });
   }
 
@@ -29,7 +33,7 @@ export class BulletManager {
 
   draw() {
     for (const b of this.enemyBullets) {
-      this.renderer.drawRect(b.x, b.y, b.w, b.h, theme.colors.enemyBullet);
+      this.renderer.drawImg('gcball', b.x, b.y, b.w, b.h);
     }
   }
 }

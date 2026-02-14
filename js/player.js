@@ -1,14 +1,18 @@
-import { SPRITES } from './sprites.js';
-import { theme } from './theme.js';
+// Player uses head.png (Mario) as sprite, cball.png as bullets, fries.png as protected item
+
+const PLAYER_W = 44;
+const PLAYER_H = 44;
+const BULLET_SIZE = 18; // cball.png rendered as square
+const FRIES_W = 32;
+const FRIES_H = 42;
 
 export class Player {
   constructor(renderer) {
     this.renderer = renderer;
-    const size = renderer.getSpriteSize(SPRITES.player);
-    this.w = size.w;
-    this.h = size.h;
+    this.w = PLAYER_W;
+    this.h = PLAYER_H;
     this.x = (renderer.width - this.w) / 2;
-    this.y = renderer.height - this.h - 30;
+    this.y = renderer.height - this.h - 28;
     this.speed = 300;
     this.lives = 3;
     this.bullets = [];
@@ -21,9 +25,8 @@ export class Player {
   }
 
   reset(full) {
-    const size = this.renderer.getSpriteSize(SPRITES.player);
-    this.x = (this.renderer.width - size.w) / 2;
-    this.y = this.renderer.height - this.h - 30;
+    this.x = (this.renderer.width - this.w) / 2;
+    this.y = this.renderer.height - this.h - 28;
     this.bullets = [];
     this.dead = false;
     this.respawnTimer = 0;
@@ -62,10 +65,10 @@ export class Player {
     if (now - this.lastFireTime < this.fireCooldown) return null;
     this.lastFireTime = now;
     const bullet = {
-      x: this.x + this.w / 2 - 1.5,
-      y: this.y - 12,
-      w: 3,
-      h: 12,
+      x: this.x + this.w / 2 - BULLET_SIZE / 2,
+      y: this.y - BULLET_SIZE,
+      w: BULLET_SIZE,
+      h: BULLET_SIZE,
       speed: 600,
     };
     this.bullets.push(bullet);
@@ -85,14 +88,18 @@ export class Player {
   }
 
   draw() {
-    const c = theme.colors;
+    // Draw player bullets as cball.png
     for (const b of this.bullets) {
-      this.renderer.drawRect(b.x, b.y, b.w, b.h, c.bullet);
+      this.renderer.drawImg('cball', b.x, b.y, b.w, b.h);
     }
 
     if (this.dead) return;
     if (this.blinkTimer > 0 && Math.floor(this.blinkTimer * 10) % 2 === 0) return;
 
-    this.renderer.drawSprite(SPRITES.player, this.x, this.y, c.player);
+    // Draw fries behind (to the right of) Mario
+    this.renderer.drawImg('fries', this.x + this.w + 4, this.y + this.h - FRIES_H, FRIES_W, FRIES_H);
+
+    // Draw Mario (head.png)
+    this.renderer.drawImg('head', this.x, this.y, this.w, this.h);
   }
 }

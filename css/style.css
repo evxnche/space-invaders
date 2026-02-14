@@ -115,16 +115,20 @@ canvas {
   width: 36px;
   height: 36px;
   border: 1px solid var(--btn-border);
-  background: var(--toggle-bg);
-  color: var(--toggle-color);
-  font-size: 18px;
+  background: var(--toggle-bg) url('../speaker.png') center/60% no-repeat;
+  image-rendering: pixelated;
+  color: transparent;
+  font-size: 0;
   border-radius: 6px;
   cursor: pointer;
   z-index: 10;
-  transition: background 0.2s;
+  transition: background-color 0.2s, opacity 0.2s;
 }
 #mute-toggle:hover {
-  background: var(--btn-hover-bg);
+  background-color: var(--btn-hover-bg);
+}
+#mute-toggle.muted {
+  opacity: 0.35;
 }
 
 /* ── Menu UI ── */
@@ -167,6 +171,29 @@ canvas {
   border-color: var(--btn-secondary-border);
   font-size: 13px;
   padding: 8px 16px;
+}
+
+/* ── Quit button — bottom-left during gameplay ── */
+#btn-quit {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1px;
+  padding: 5px 12px;
+  border: 1px solid var(--btn-secondary-border);
+  background: var(--btn-bg);
+  color: var(--btn-secondary-color);
+  cursor: pointer;
+  border-radius: 4px;
+  z-index: 5;
+  transition: background 0.2s;
+}
+#btn-quit:hover {
+  background: var(--btn-hover-bg);
+  color: var(--btn-color);
 }
 
 /* ── Game-over overlay buttons ── */

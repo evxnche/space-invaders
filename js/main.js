@@ -3,9 +3,11 @@ import { Input } from './input.js';
 import { Game } from './game.js';
 import { theme } from './theme.js';
 import * as sb from './supabase.js';
+import { preloadImages } from './images.js';
 
 // --- Init ---
 theme.applyToDOM();
+await preloadImages();
 
 const canvas = document.getElementById('gameCanvas');
 const renderer = new Renderer(canvas);
@@ -23,6 +25,7 @@ const btnMultiplayer= document.getElementById('btn-multiplayer');
 const btnLeaderboard= document.getElementById('btn-leaderboard');
 const btnRestart    = document.getElementById('btn-restart');
 const btnMainMenu   = document.getElementById('btn-mainmenu');
+const btnQuit       = document.getElementById('btn-quit');
 const msgInput      = document.getElementById('msg-input');
 const msgSend       = document.getElementById('msg-send');
 const msgConfirm    = document.getElementById('msg-confirm');
@@ -38,7 +41,7 @@ const mpClose       = document.getElementById('mp-close');
 const mpStart       = document.getElementById('mp-start');
 const mpCountBtns   = document.querySelectorAll('.mp-count');
 
-game.setUI({ menuUI, gameoverUI, themeToggle, mpModal, mpStatus });
+game.setUI({ menuUI, gameoverUI, themeToggle, mpModal, mpStatus, btnQuit });
 
 // --- Wrapper Scaling ---
 function resizeWrapper() {
@@ -51,13 +54,14 @@ resizeWrapper();
 // --- Background Music ---
 const bgMusic = new Audio('gg.mp3');
 bgMusic.loop = true;
-bgMusic.volume = 0.5;
+bgMusic.volume = 0.18;
 
 let musicStarted = false;
 let muted = localStorage.getItem('siMuted') === 'true';
 
 function updateMuteIcon() {
-  muteToggle.textContent = muted ? '🔇' : '🔊';
+  muteToggle.textContent = '';
+  muteToggle.classList.toggle('muted', muted);
   bgMusic.muted = muted;
 }
 updateMuteIcon();
@@ -101,6 +105,9 @@ btnRestart.addEventListener('click', () => {
   game.startSoloGame();
 });
 btnMainMenu.addEventListener('click', () => {
+  game.returnToMenu();
+});
+btnQuit.addEventListener('click', () => {
   game.returnToMenu();
 });
 

@@ -372,7 +372,7 @@ export class Game {
     this.renderer.drawText(
       'built by evan',
       this.renderer.width / 2,
-      this.renderer.height - 8,
+      this.renderer.height - 50,
       c.textDim, 11, 'center'
     );
   }
@@ -442,6 +442,16 @@ export class Game {
       onGameStart: () => {
         this.hideMenuUI();
         this.hideMpModal();
+        this.audio.init();
+        this.score = 0;
+        this.level = 1;
+        this.isNewHigh = false;
+        this.player.reset(true);
+        this.extraPlayers = [];
+        this.particles = [];
+        this.notifications = [];
+        this.wrongKeyTimer = 0;
+        this.startLevel();
         this.state = State.MP_PLAYING;
       },
     });
@@ -489,7 +499,7 @@ export class Game {
       this.footerClickTimer = 0;
       this.audio.init();
       this.audio.secretJingle();
-      this.pushNotification('✦ SECRET UNLOCKED ✦');
+      this.pushNotification("i'm blushing already, stop :))", 2);
     }
   }
 
@@ -555,14 +565,17 @@ export class Game {
   showMenuUI() {
     if (this.ui.menuUI) this.ui.menuUI.classList.remove('hidden');
     if (this.ui.themeToggle) this.ui.themeToggle.classList.remove('hidden');
+    if (this.ui.btnQuit) this.ui.btnQuit.classList.add('hidden');
   }
 
   hideMenuUI() {
     if (this.ui.menuUI) this.ui.menuUI.classList.add('hidden');
+    if (this.ui.btnQuit) this.ui.btnQuit.classList.remove('hidden');
   }
 
   showGameoverUI() {
     if (this.ui.gameoverUI) this.ui.gameoverUI.classList.remove('hidden');
+    if (this.ui.btnQuit) this.ui.btnQuit.classList.add('hidden');
   }
 
   hideGameoverUI() {

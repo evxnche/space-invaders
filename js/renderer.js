@@ -1,4 +1,5 @@
 import { theme } from './theme.js';
+import { IMGS } from './images.js';
 
 export class Renderer {
   constructor(canvas) {
@@ -32,6 +33,49 @@ export class Renderer {
       w: spriteData[0].length * ps,
       h: spriteData.length * ps,
     };
+  }
+
+  // Draw a loaded PNG image
+  drawImg(key, x, y, w, h, alpha) {
+    const img = IMGS[key];
+    if (!img) return;
+    if (alpha !== undefined && alpha !== 1) {
+      this.ctx.save();
+      this.ctx.globalAlpha = alpha;
+    }
+    this.ctx.imageSmoothingEnabled = false;
+    this.ctx.drawImage(img, x, y, w, h);
+    if (alpha !== undefined && alpha !== 1) {
+      this.ctx.restore();
+    }
+  }
+
+  // Draw a shield PNG with pixel-level erosion mask
+  drawShieldPNG(shield, imgKey) {
+    const img = IMGS[imgKey];
+    if (!img) {
+      this.drawShield(shield);
+      return;
+    }
+    const rows = shield.data.length;
+    const cols = shield.data[0].length;
+    const ps = shield.pixelSize || this.pixelSize;
+    // Draw each surviving pixel as its corresponding sub-region of the PNG
+    this.ctx.imageSmoothingEnabled = false;
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        if (shield.data[row][col]) {
+          const srcX = Math.floor((col / cols) * img.width);
+          const srcY = Math.floor((row / rows) * img.height);
+          const srcW = Math.max(1, Math.floor(img.width / cols));
+          const srcH = Math.max(1, Math.floor(img.height / rows));
+          this.ctx.drawImage(
+            img, srcX, srcY, srcW, srcH,
+            shield.x + col * ps, shield.y + row * ps, ps, ps
+          );
+        }
+      }
+    }
   }
 
   drawRect(x, y, w, h, color) {
