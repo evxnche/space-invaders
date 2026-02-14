@@ -3,7 +3,9 @@ export class Audio {
     this.ctx = null;
     this.initialized = false;
     this.marchIndex = 0;
-    this.marchNotes = [55, 49.5, 46.25, 41.2]; // 4-note march
+    // Tabla-like pitches — A2, G2, E2, D2
+    this.marchNotes = [110, 98, 82, 73];
+    this.wrongKeyOnCooldown = false;
   }
 
   init() {
@@ -16,97 +18,193 @@ export class Audio {
     }
   }
 
-  playTone(freq, duration, type, volume) {
+  playTone(freq, duration, type, volume, startOffset) {
     if (!this.ctx) return;
+    const t = this.ctx.currentTime + (startOffset || 0);
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.connect(gain);
     gain.connect(this.ctx.destination);
     osc.type = type || 'square';
     osc.frequency.value = freq;
-    gain.gain.value = volume || 0.1;
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-    osc.start(this.ctx.currentTime);
-    osc.stop(this.ctx.currentTime + duration);
+    gain.gain.setValueAtTime(volume || 0.1, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    osc.start(t);
+    osc.stop(t + duration);
   }
 
-  playNoise(duration, volume) {
+  playNoise(duration, volume, startOffset) {
     if (!this.ctx) return;
-    const bufferSize = this.ctx.sampleRate * duration;
+    const t = this.ctx.currentTime + (startOffset || 0);
+    const bufferSize = Math.ceil(this.ctx.sampleRate * duration);
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
-    }
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
     const source = this.ctx.createBufferSource();
     source.buffer = buffer;
     const gain = this.ctx.createGain();
     source.connect(gain);
     gain.connect(this.ctx.destination);
-    gain.gain.value = volume || 0.1;
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-    source.start();
+    gain.gain.setValueAtTime(volume || 0.1, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    source.start(t);
   }
 
-  shoot() {
-    this.playTone(880, 0.1, 'square', 0.08);
-    setTimeout(() => this.playTone(440, 0.05, 'square', 0.05), 50);
-  }
-
-  enemyExplosion() {
-    this.playNoise(0.15, 0.12);
-    this.playTone(200, 0.15, 'sawtooth', 0.08);
-  }
-
-  playerExplosion() {
-    this.playNoise(0.4, 0.15);
-    this.playTone(100, 0.3, 'sawtooth', 0.1);
-    setTimeout(() => this.playTone(80, 0.3, 'sawtooth', 0.08), 150);
-  }
-
-  march() {
-    const note = this.marchNotes[this.marchIndex];
-    this.playTone(note, 0.1, 'square', 0.08);
-    this.marchIndex = (this.marchIndex + 1) % this.marchNotes.length;
-  }
-
-  ufoSound() {
+  // Auto-rickshaw honk — "PA-PAAAA" rising horn
+  honk(volume, startOffset) {
     if (!this.ctx) return;
+    const t = this.ctx.currentTime + (startOffset || 0);
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.connect(gain);
     gain.connect(this.ctx.destination);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(280, t);
+    osc.frequency.linearRampToValueAtTime(380, t + 0.04);
+    osc.frequency.setValueAtTime(280, t + 0.06);
+    osc.frequency.linearRampToValueAtTime(420, t + 0.08);
+    osc.frequency.exponentialRampToValueAtTime(300, t + 0.18);
+    gain.gain.setValueAtTime(volume || 0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    osc.start(t);
+    osc.stop(t + 0.22);
+  }
+
+  // Shoot — quick double-honk, lighter
+  shoot() {
+    this.honk(0.09, 0);
+  }
+
+  // Enemy explosion — dhol/tabla thump
+  enemyExplosion() {
+    if (!this.ctx) return;
+    // Low thump
+    this.playTone(120, 0.12, 'sine', 0.15);
+    // Noise burst
+    this.playNoise(0.08, 0.1);
+    // Pitch drop
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.connect(gain); gain.connect(this.ctx.destination);
     osc.type = 'sine';
-    osc.frequency.value = 400;
-    osc.frequency.linearRampToValueAtTime(600, this.ctx.currentTime + 0.1);
-    osc.frequency.linearRampToValueAtTime(400, this.ctx.currentTime + 0.2);
-    gain.gain.value = 0.06;
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
-    osc.start();
-    osc.stop(this.ctx.currentTime + 0.25);
+    osc.frequency.setValueAtTime(200, t);
+    osc.frequency.exponentialRampToValueAtTime(60, t + 0.15);
+    gain.gain.setValueAtTime(0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+    osc.start(t); osc.stop(t + 0.16);
+  }
+
+  // Player death — deflating shehnai / sad trombone
+  playerExplosion() {
+    if (!this.ctx) return;
+    this.playNoise(0.4, 0.12);
+    // Descending wail
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(440, t);
+    osc.frequency.exponentialRampToValueAtTime(100, t + 0.6);
+    gain.gain.setValueAtTime(0.1, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+    osc.start(t); osc.stop(t + 0.62);
+  }
+
+  // March — tabla-style 4-beat rhythm
+  march() {
+    if (!this.ctx) return;
+    const note = this.marchNotes[this.marchIndex];
+    // Main tabla hit
+    this.playTone(note, 0.08, 'sine', 0.12);
+    // Resonance
+    this.playTone(note * 1.5, 0.04, 'sine', 0.05);
+    this.marchIndex = (this.marchIndex + 1) % this.marchNotes.length;
+  }
+
+  // UFO / Ambassador car — classic car horn
+  ufoSound() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(350, t);
+    osc.frequency.setValueAtTime(280, t + 0.1);
+    gain.gain.setValueAtTime(0.06, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+    osc.start(t); osc.stop(t + 0.24);
   }
 
   shieldHit() {
-    this.playTone(150, 0.08, 'square', 0.05);
+    this.playTone(180, 0.06, 'square', 0.05);
+    this.playNoise(0.05, 0.06);
   }
 
   ufoExplosion() {
     this.playNoise(0.3, 0.15);
-    this.playTone(600, 0.15, 'sine', 0.1);
-    setTimeout(() => this.playTone(400, 0.15, 'sine', 0.08), 100);
+    // Descending car horn
+    this.playTone(500, 0.15, 'sawtooth', 0.1);
+    this.playTone(350, 0.2, 'sawtooth', 0.08, 0.1);
   }
 
+  // Level clear — celebratory dhol roll + ascending notes (shehnai flavour)
   levelComplete() {
-    const notes = [523, 659, 784, 1047];
-    notes.forEach((n, i) => {
-      setTimeout(() => this.playTone(n, 0.15, 'square', 0.08), i * 120);
-    });
+    if (!this.ctx) return;
+    // Drum roll
+    for (let i = 0; i < 6; i++) {
+      this.playNoise(0.04, 0.06, i * 0.05);
+    }
+    // Ascending melody
+    const notes = [261, 329, 392, 523, 659];
+    notes.forEach((n, i) => this.playTone(n, 0.18, 'sawtooth', 0.08, 0.3 + i * 0.12));
   }
 
   gameOver() {
+    // Sad descending — deflating mood
     const notes = [392, 330, 262, 196];
-    notes.forEach((n, i) => {
-      setTimeout(() => this.playTone(n, 0.3, 'square', 0.08), i * 250);
-    });
+    notes.forEach((n, i) => this.playTone(n, 0.3, 'sawtooth', 0.08, i * 0.25));
+  }
+
+  // Sustained Indian truck horn for wrong key easter egg
+  autoRickshawHonk() {
+    if (!this.ctx || this.wrongKeyOnCooldown) return;
+    this.wrongKeyOnCooldown = true;
+    setTimeout(() => { this.wrongKeyOnCooldown = false; }, 5000);
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.type = 'sawtooth';
+    // PA-PA-PAAAN pattern
+    osc.frequency.setValueAtTime(300, t);
+    osc.frequency.linearRampToValueAtTime(420, t + 0.06);
+    osc.frequency.setValueAtTime(300, t + 0.1);
+    osc.frequency.linearRampToValueAtTime(420, t + 0.16);
+    osc.frequency.setValueAtTime(300, t + 0.2);
+    osc.frequency.linearRampToValueAtTime(460, t + 0.25);
+    osc.frequency.exponentialRampToValueAtTime(320, t + 0.55);
+    gain.gain.setValueAtTime(0.18, t);
+    gain.gain.setValueAtTime(0.18, t + 0.5);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+    osc.start(t);
+    osc.stop(t + 0.62);
+  }
+
+  // Uncon easter egg — magic jingle
+  unconJingle() {
+    if (!this.ctx) return;
+    const notes = [523, 659, 784, 659, 880];
+    notes.forEach((n, i) => this.playTone(n, 0.15, 'square', 0.09, i * 0.1));
+  }
+
+  // Evan footer 7-click secret
+  secretJingle() {
+    if (!this.ctx) return;
+    const notes = [262, 330, 392, 523, 392, 330, 523, 659, 784];
+    notes.forEach((n, i) => this.playTone(n, 0.12, 'sawtooth', 0.07, i * 0.08));
   }
 }

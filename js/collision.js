@@ -3,30 +3,32 @@ const ENEMY_POINTS = [30, 20, 10];
 export class CollisionDetector {
   constructor() {}
 
-  checkPlayerBulletVsEnemies(player, enemyGrid) {
-    const b = player.bullet;
-    if (!b) return null;
-
-    for (let i = 0; i < enemyGrid.enemies.length; i++) {
-      const e = enemyGrid.enemies[i];
-      if (!e.alive) continue;
-
-      if (this.aabb(b, e)) {
-        player.bullet = null;
-        enemyGrid.killEnemy(i);
-        return { index: i, points: ENEMY_POINTS[e.type], x: e.x, y: e.y, w: e.w, h: e.h };
+  checkPlayerBulletsVsEnemies(player, enemyGrid) {
+    const hits = [];
+    for (let bi = player.bullets.length - 1; bi >= 0; bi--) {
+      const b = player.bullets[bi];
+      for (let i = 0; i < enemyGrid.enemies.length; i++) {
+        const e = enemyGrid.enemies[i];
+        if (!e.alive) continue;
+        if (this.aabb(b, e)) {
+          player.removeBullet(bi);
+          enemyGrid.killEnemy(i);
+          hits.push({ index: i, points: ENEMY_POINTS[e.type], x: e.x, y: e.y, w: e.w, h: e.h });
+          break;
+        }
       }
     }
-    return null;
+    return hits;
   }
 
-  checkPlayerBulletVsUFO(player, ufo) {
-    if (!player.bullet || !ufo.active) return null;
-    const b = player.bullet;
-
-    if (this.aabb(b, { x: ufo.x, y: ufo.y, w: ufo.w, h: ufo.h })) {
-      player.bullet = null;
-      return ufo.hit();
+  checkPlayerBulletsVsUFO(player, ufo) {
+    if (!ufo.active) return null;
+    for (let bi = player.bullets.length - 1; bi >= 0; bi--) {
+      const b = player.bullets[bi];
+      if (this.aabb(b, { x: ufo.x, y: ufo.y, w: ufo.w, h: ufo.h })) {
+        player.removeBullet(bi);
+        return ufo.hit();
+      }
     }
     return null;
   }
@@ -44,14 +46,16 @@ export class CollisionDetector {
     return false;
   }
 
-  checkPlayerBulletVsShields(player, shieldManager) {
-    if (!player.bullet) return false;
-    const b = player.bullet;
-    if (shieldManager.checkBulletCollision(b.x, b.y, b.w, b.h)) {
-      player.bullet = null;
-      return true;
+  checkPlayerBulletsVsShields(player, shieldManager) {
+    let hit = false;
+    for (let bi = player.bullets.length - 1; bi >= 0; bi--) {
+      const b = player.bullets[bi];
+      if (shieldManager.checkBulletCollision(b.x, b.y, b.w, b.h)) {
+        player.removeBullet(bi);
+        hit = true;
+      }
     }
-    return false;
+    return hit;
   }
 
   checkEnemyBulletsVsShields(bulletManager, shieldManager) {

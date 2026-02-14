@@ -1,4 +1,5 @@
-import { SPRITES, COLORS } from './sprites.js';
+import { SPRITES } from './sprites.js';
+import { theme } from './theme.js';
 
 export class UFO {
   constructor(renderer) {
@@ -12,7 +13,7 @@ export class UFO {
     this.direction = 1;
     this.speed = 120;
     this.spawnTimer = 0;
-    this.spawnInterval = 20; // seconds between spawns
+    this.spawnInterval = 20;
     this.scoreValues = [50, 100, 150, 200, 300];
     this.showScore = false;
     this.scoreX = 0;
@@ -34,14 +35,11 @@ export class UFO {
 
     if (!this.active) {
       this.spawnTimer += dt;
-      if (this.spawnTimer >= this.spawnInterval) {
-        this.spawn();
-      }
+      if (this.spawnTimer >= this.spawnInterval) this.spawn();
       return;
     }
 
     this.x += this.speed * this.direction * dt;
-
     if ((this.direction === 1 && this.x > this.renderer.width + 20) ||
         (this.direction === -1 && this.x + this.w < -20)) {
       this.active = false;
@@ -62,25 +60,15 @@ export class UFO {
     this.showScore = true;
     this.scoreX = this.x;
     this.scoreTimer = 1;
-    return {
-      points: this.scoreValue,
-      x: this.x,
-      y: this.y,
-      w: this.w,
-      h: this.h,
-    };
+    return { points: this.scoreValue, x: this.x, y: this.y, w: this.w, h: this.h };
   }
 
   draw() {
+    const c = theme.colors;
     if (this.showScore) {
-      this.renderer.drawText(
-        this.scoreValue.toString(),
-        this.scoreX + this.w / 2, this.y + 2,
-        COLORS.ufo, 10, 'center'
-      );
+      this.renderer.drawText(this.scoreValue.toString(), this.scoreX + this.w / 2, this.y + 2, c.ufo, 14, 'center');
     }
-
     if (!this.active) return;
-    this.renderer.drawSprite(SPRITES.ufo, this.x, this.y, COLORS.ufo);
+    this.renderer.drawSprite(SPRITES.ufo, this.x, this.y, c.ufo);
   }
 }

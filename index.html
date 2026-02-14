@@ -6,11 +6,66 @@
   <title>Space Invaders</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body>
-  <canvas id="gameCanvas" width="800" height="600"></canvas>
+<body data-theme="dark">
+  <!-- game-wrapper is scaled as a unit so all overlays position correctly with the canvas -->
+  <div id="game-wrapper">
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+    <!-- Controls — top-right corner of game area -->
+    <button id="mute-toggle" title="Mute/unmute music">🔊</button>
+    <button id="theme-toggle" title="Toggle light/dark mode"></button>
+
+    <!-- Menu UI overlay -->
+    <div id="menu-ui">
+      <div class="menu-buttons">
+        <button id="btn-play" class="menu-btn">PLAY</button>
+        <button id="btn-multiplayer" class="menu-btn menu-btn-secondary">MULTIPLAYER</button>
+        <button id="btn-leaderboard" class="menu-btn menu-btn-secondary">LEADERBOARD</button>
+      </div>
+      <div id="msg-container">
+        <input type="text" id="msg-input" maxlength="100" placeholder="say hi to evan :)">
+        <button id="msg-send">SEND</button>
+      </div>
+      <div id="msg-confirm" class="hidden">message sent!</div>
+    </div>
+
+    <!-- Game-over / level-clear overlay buttons -->
+    <div id="gameover-ui" class="hidden">
+      <button id="btn-restart" class="menu-btn">PLAY AGAIN</button>
+      <button id="btn-mainmenu" class="menu-btn menu-btn-secondary">MAIN MENU</button>
+    </div>
+
+    <!-- Multiplayer modal -->
+    <div id="mp-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2>MULTIPLAYER</h2>
+        <div class="mp-section">
+          <div class="mp-row">
+            <span class="mp-label">Players:</span>
+            <button class="mp-count active" data-count="2">2</button>
+            <button class="mp-count" data-count="3">3</button>
+          </div>
+          <button id="mp-create" class="menu-btn">CREATE ROOM</button>
+        </div>
+        <div class="mp-divider">— or —</div>
+        <div class="mp-section">
+          <div class="mp-row">
+            <input type="text" id="mp-code-input" maxlength="6" placeholder="ROOM CODE" style="text-transform:uppercase">
+            <button id="mp-join" class="menu-btn menu-btn-secondary">JOIN</button>
+          </div>
+        </div>
+        <div id="mp-code-display"></div>
+        <div id="mp-status" class="hidden"></div>
+        <button id="mp-start" class="menu-btn hidden">START GAME</button>
+        <button id="mp-close" class="menu-btn menu-btn-secondary">BACK</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
