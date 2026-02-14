@@ -1,14 +1,16 @@
-import { SPRITES } from './sprites.js';
 import { theme } from './theme.js';
 
-const MARIO_W = 130;
-const MARIO_H = 130;
+const MARIO_W = 170;
+const MARIO_H = 170;
 
 export class Screens {
   constructor(renderer) {
     this.renderer = renderer;
     this.blinkTimer = 0;
     this.showText = true;
+
+    // Mario bounce animation
+    this.marioAnimTime = 0;
 
     // Name entry state
     this.nameChars = ['A', 'A', 'A'];
@@ -26,6 +28,7 @@ export class Screens {
       this.blinkTimer = 0;
       this.showText = !this.showText;
     }
+    this.marioAnimTime += dt;
   }
 
   resetNameEntry() {
@@ -47,38 +50,44 @@ export class Screens {
     const c = theme.colors;
     const cx = this.renderer.width / 2;
 
-    // Title — McInvaders
-    this.renderer.drawTitleText('McInvaders', cx, 22, c.title, 28, 'center');
+    // Title — McInvaders (Press Start 2P)
+    this.renderer.drawTitleText('McInvaders', cx, 18, c.title, 28, 'center');
+
+    // Static arches flanking the title, sharing the same baseline
+    const archW = 36;
+    const archH = 36;
+    const titleBaseline = 18 + 32; // title y + approx cap height of 32px
+    const archY = titleBaseline - archH; // top of arch so bottom aligns with title baseline
+    this.renderer.drawImg('arches', cx - 210 - archW, archY, archW, archH);
+    this.renderer.drawImg('arches', cx + 210,          archY, archW, archH);
 
     // Tighter horizontal scoring table
-    const tableY = 75;
-    this.renderer.drawText('SCORING', cx, tableY, c.textDim, 13, 'center');
+    const tableY = 82;
+    this.renderer.drawText('SCORING', cx, tableY, c.textDim, 12, 'center');
 
-    const spriteScale = 0.6;
-    const colWidth = 150;               // tighter than 185
+    const imgSize = 28;
+    const colWidth = 150;
     const startX = cx - 2 * colWidth;
     const rowY = tableY + 18;
 
     const items = [
-      { sprite: SPRITES.ufo,     color: c.ufo,    label: '? PTS' },
-      { sprite: SPRITES.enemy1a, color: c.enemy1, label: '30 PTS' },
-      { sprite: SPRITES.enemy2a, color: c.enemy2, label: '20 PTS' },
-      { sprite: SPRITES.enemy3a, color: c.enemy3, label: '10 PTS' },
+      { key: 'o4', label: '? PTS' },
+      { key: 'o3', label: '30 PTS' },
+      { key: 'o2', label: '20 PTS' },
+      { key: 'o1', label: '10 PTS' },
     ];
 
     items.forEach((item, i) => {
       const colCx = startX + i * colWidth + colWidth / 2;
-      const sw = item.sprite[0].length * 3 * spriteScale;
-      const sh = item.sprite.length * 3 * spriteScale;
       const labelW = item.label.length * 6.5;
-      const groupW = sw + 5 + labelW;
+      const groupW = imgSize + 6 + labelW;
       const groupX = colCx - groupW / 2;
-      this.renderer.drawSprite(item.sprite, groupX, rowY, item.color, spriteScale);
-      this.renderer.drawText(item.label, groupX + sw + 5, rowY + sh / 2 - 6, c.text, 11);
+      this.renderer.drawImg(item.key, groupX, rowY, imgSize, imgSize);
+      this.renderer.drawText(item.label, groupX + imgSize + 6, rowY + imgSize / 2 - 6, c.text, 11);
     });
 
     // Controls line right under scoring
-    const controlsY = rowY + 20;
+    const controlsY = rowY + imgSize + 4;
     this.renderer.drawText(
       '\u2190\u2192 MOVE    SPACE FIRE    T THEME',
       cx, controlsY, c.textDim, 11, 'center'
@@ -88,27 +97,44 @@ export class Screens {
     if (highScore > 0) {
       this.renderer.drawText(
         `HI-SCORE: ${highScore.toString().padStart(6, '0')}`,
-        cx, controlsY + 20, c.secondary, 13, 'center'
+        cx, controlsY + 18, c.secondary, 13, 'center'
       );
     }
 
-    // Mario graphic — large, in the open space below
+    // Mario graphic — bounce animation
+    const bounceAmp = 6;
+    const bounceFreq = 1.8;
+    const bounce = Math.abs(Math.sin(this.marioAnimTime * Math.PI * bounceFreq)) * bounceAmp;
     const marioX = cx - MARIO_W / 2;
-    const marioY = controlsY + 46;
+    const marioY = controlsY + (highScore > 0 ? 42 : 26) - bounce;
     this.renderer.drawImg('mario', marioX, marioY, MARIO_W, MARIO_H);
 
-    // Mario idle — "Start already" speech bubble after 8s
+    // Storyline text — under Mario, larger
+    this.renderer.drawText(
+      'help Mario save the day!',
+      cx, marioY + MARIO_H + 6, c.textDim, 13, 'center'
+    );
+    this.renderer.drawText(
+      'McD (and planet Earth) is in danger',
+      cx, marioY + MARIO_H + 24, c.textDim, 13, 'center'
+    );
+
+    // Speech bubble — "Start already!" after idleTriggered
     if (idleTriggered) {
-      this.drawMarioSpeechBubble(marioX + MARIO_W, marioY + 18, c);
+      this.drawMarioSpeechBubble(marioX + MARIO_W, marioY + 18, c, 'Start already!');
     }
 
     this.drawFooter();
   }
 
-  drawMarioSpeechBubble(tailX, tailY, c) {
-    const bw = 148;
+  drawMarioSpeechBubble(tailX, tailY, c, text) {
+    const msg = text || 'Start already!';
+    const bw = Math.max(120, msg.length * 7.5 + 20);
     const bh = 28;
-    const bx = tailX + 10;
+    // If bubble would go off right edge, draw it to the left of Mario
+    const rightEdge = tailX + 10 + bw;
+    const flip = rightEdge > this.renderer.width - 10;
+    const bx = flip ? tailX - bw - 10 : tailX + 10;
     const by = tailY;
 
     this.renderer.ctx.save();
@@ -121,15 +147,21 @@ export class Screens {
     }
     this.renderer.ctx.fill();
 
-    // Tail pointing left toward Mario
+    // Tail pointing toward Mario
     this.renderer.ctx.beginPath();
-    this.renderer.ctx.moveTo(bx, by + bh / 2 - 5);
-    this.renderer.ctx.lineTo(bx - 10, by + bh / 2);
-    this.renderer.ctx.lineTo(bx, by + bh / 2 + 5);
+    if (flip) {
+      this.renderer.ctx.moveTo(bx + bw, by + bh / 2 - 5);
+      this.renderer.ctx.lineTo(bx + bw + 10, by + bh / 2);
+      this.renderer.ctx.lineTo(bx + bw, by + bh / 2 + 5);
+    } else {
+      this.renderer.ctx.moveTo(bx, by + bh / 2 - 5);
+      this.renderer.ctx.lineTo(bx - 10, by + bh / 2);
+      this.renderer.ctx.lineTo(bx, by + bh / 2 + 5);
+    }
     this.renderer.ctx.fill();
     this.renderer.ctx.restore();
 
-    this.renderer.drawText('Start already!', bx + bw / 2, by + bh / 2 - 6, c.bg || '#0a0a0a', 11, 'center');
+    this.renderer.drawText(msg, bx + bw / 2, by + bh / 2 - 6, c.bg || '#0a0a0a', 11, 'center');
   }
 
   drawGameOver(score, highScore, isNewHigh) {

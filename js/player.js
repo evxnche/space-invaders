@@ -1,10 +1,10 @@
 // Player uses head.png (Mario) as sprite, cball.png as bullets, fries.png as protected item
 
-const PLAYER_W = 44;
-const PLAYER_H = 44;
+const PLAYER_W = 64;
+const PLAYER_H = 64;
 const BULLET_SIZE = 18; // cball.png rendered as square
-const FRIES_W = 32;
-const FRIES_H = 42;
+const FRIES_W = 46;
+const FRIES_H = 60;
 
 export class Player {
   constructor(renderer) {
@@ -21,7 +21,7 @@ export class Player {
     this.respawnTimer = 0;
     this.blinkTimer = 0;
     this.lastFireTime = 0;
-    this.fireCooldown = 300;
+    this.fireCooldown = 500;
   }
 
   reset(full) {

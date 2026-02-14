@@ -1,12 +1,10 @@
-import { SPRITES } from './sprites.js';
 import { theme } from './theme.js';
 
 export class UFO {
   constructor(renderer) {
     this.renderer = renderer;
-    const size = renderer.getSpriteSize(SPRITES.ufo);
-    this.w = size.w;
-    this.h = size.h;
+    this.w = 42;
+    this.h = 28;
     this.active = false;
     this.x = 0;
     this.y = 40;
@@ -69,6 +67,6 @@ export class UFO {
       this.renderer.drawText(this.scoreValue.toString(), this.scoreX + this.w / 2, this.y + 2, c.ufo, 14, 'center');
     }
     if (!this.active) return;
-    this.renderer.drawSprite(SPRITES.ufo, this.x, this.y, c.ufo);
+    this.renderer.drawImg('o4', this.x, this.y, this.w, this.h);
   }
 }

@@ -1,10 +1,15 @@
 import { SPRITES } from './sprites.js';
 import { theme } from './theme.js';
 
+// PNG image keys per enemy type (o1=weakest…o3=strongest, o4=UFO)
+const ENEMY_IMG = ['o3', 'o2', 'o1'];
+const ENEMY_W = 34;
+const ENEMY_H = 32;
+
 const ENEMY_TYPES = [
-  { spriteA: 'enemy1a', spriteB: 'enemy1b', colorKey: 'enemy1', points: 30 },
-  { spriteA: 'enemy2a', spriteB: 'enemy2b', colorKey: 'enemy2', points: 20 },
-  { spriteA: 'enemy3a', spriteB: 'enemy3b', colorKey: 'enemy3', points: 10 },
+  { points: 30 },
+  { points: 20 },
+  { points: 10 },
 ];
 
 const ROW_TYPE = [0, 1, 1, 2, 2];
@@ -40,21 +45,19 @@ export class EnemyGrid {
     this.aliveCount = this.rows * this.cols;
     this.levelOffset = Math.min((level - 1) * 15, 120);
 
-    const spacing = 48;
-    const rowHeight = 36;
-    const startX = 60;
+    const spacing = 52;
+    const rowHeight = 42;
+    const startX = 50;
     const startY = 80 + this.levelOffset;
 
     for (let row = 0; row < this.rows; row++) {
       for (let col = 0; col < this.cols; col++) {
         const typeIdx = ROW_TYPE[row];
-        const type = ENEMY_TYPES[typeIdx];
-        const size = this.renderer.getSpriteSize(SPRITES[type.spriteA]);
         this.enemies.push({
           x: startX + col * spacing,
           y: startY + row * rowHeight,
-          w: size.w,
-          h: size.h,
+          w: ENEMY_W,
+          h: ENEMY_H,
           type: typeIdx,
           alive: true,
           exploding: false,
@@ -151,16 +154,19 @@ export class EnemyGrid {
 
   draw() {
     const c = theme.colors;
+    // animFrame toggles 0/1 on each move tick — use it for a classic squish/stretch anim
+    const scale = this.animFrame === 0 ? 1 : 1.12;
     for (const e of this.enemies) {
       if (e.exploding) {
         this.renderer.drawSprite(SPRITES.explosion, e.x, e.y, c.explosion);
         continue;
       }
       if (!e.alive) continue;
-
-      const type = ENEMY_TYPES[e.type];
-      const spriteName = this.animFrame === 0 ? type.spriteA : type.spriteB;
-      this.renderer.drawSprite(SPRITES[spriteName], e.x, e.y, c[type.colorKey]);
+      const dw = e.w * scale;
+      const dh = e.h * scale;
+      const dx = e.x - (dw - e.w) / 2;
+      const dy = e.y - (dh - e.h) / 2;
+      this.renderer.drawImg(ENEMY_IMG[e.type], dx, dy, dw, dh);
     }
   }
 }

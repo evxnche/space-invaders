@@ -61,9 +61,21 @@ export class Game {
     // Notifications (canvas overlay)
     this.notifications = []; // [{text, timer, maxTimer}]
 
-    // Easter egg: idle menu timer
-    this.menuIdleTimer = 0;
+    // Menu idle: show speech bubble 1s after first interaction
+    this.menuHadInteraction = false;
+    this.menuInteractionTimer = 0;
     this.menuIdleTriggered = false;
+
+    // Mario gameplay dialogue
+    this.marioDialogTimer = 0;
+    this.marioDialogVisible = false;
+    this.marioDialogIdx = 0;
+    this.marioDialogVisibleTimer = 0;
+    this.marioDialogMessages = [
+      'one happy meal coming up',
+      'McDelivery? More like McDestroy',
+      "nobody touches my fries",
+    ];
 
     // Easter egg: wrong key held timer
     this.wrongKeyTimer = 0;
@@ -130,13 +142,14 @@ export class Game {
   // --- State handlers ---
 
   updateMenu(dt) {
-    // Idle easter egg: 8s idle → show speech bubble
-    if (this.input.anyKeyPressed() || this.input.isDown(' ')) {
-      this.menuIdleTimer = 0;
-      this.menuIdleTriggered = false;
-    } else {
-      this.menuIdleTimer += dt;
-      if (this.menuIdleTimer >= 8) {
+    // Show speech bubble 1s after first interaction
+    if (!this.menuHadInteraction && (this.input.anyKeyPressed() || this.input.isDown(' '))) {
+      this.menuHadInteraction = true;
+      this.menuInteractionTimer = 0;
+    }
+    if (this.menuHadInteraction && !this.menuIdleTriggered) {
+      this.menuInteractionTimer += dt;
+      if (this.menuInteractionTimer >= 1) {
         this.menuIdleTriggered = true;
       }
     }
@@ -233,6 +246,21 @@ export class Game {
       }
     } else {
       this.wrongKeyTimer = 0;
+    }
+
+    // Mario gameplay dialogue — cycle every 7s, show for 2s
+    this.marioDialogTimer += dt;
+    if (!this.marioDialogVisible && this.marioDialogTimer >= 7) {
+      this.marioDialogTimer = 0;
+      this.marioDialogVisible = true;
+      this.marioDialogVisibleTimer = 2;
+    }
+    if (this.marioDialogVisible) {
+      this.marioDialogVisibleTimer -= dt;
+      if (this.marioDialogVisibleTimer <= 0) {
+        this.marioDialogVisible = false;
+        this.marioDialogIdx = (this.marioDialogIdx + 1) % this.marioDialogMessages.length;
+      }
     }
 
     this.player.update(dt, this.input);
@@ -364,6 +392,15 @@ export class Game {
     this.ufo.draw();
     this.renderer.drawParticles(this.particles);
     this.hud.draw(this.score, this.highScore, this.player.lives, this.level);
+    if (this.marioDialogVisible && !this.player.dead) {
+      const msg = this.marioDialogMessages[this.marioDialogIdx];
+      this.screens.drawMarioSpeechBubble(
+        this.player.x + this.player.w,
+        this.player.y - 32,
+        theme.colors,
+        msg
+      );
+    }
     this.drawFooter();
   }
 
@@ -390,6 +427,9 @@ export class Game {
     this.particles = [];
     this.notifications = [];
     this.wrongKeyTimer = 0;
+    this.marioDialogTimer = 0;
+    this.marioDialogVisible = false;
+    this.marioDialogIdx = 0;
     this.startLevel();
     this.state = State.PLAYING;
     this.hideMenuUI();
@@ -399,7 +439,8 @@ export class Game {
   returnToMenu() {
     if (this.mp.active) this.mp.leave();
     this.state = State.MENU;
-    this.menuIdleTimer = 0;
+    this.menuHadInteraction = false;
+    this.menuInteractionTimer = 0;
     this.menuIdleTriggered = false;
     this.showMenuUI();
     this.hideGameoverUI();
@@ -518,19 +559,30 @@ export class Game {
 
   drawNotifications() {
     const c = theme.colors;
+    const cx = this.renderer.width / 2;
+    const cy = this.renderer.height / 2;
     this.notifications.forEach((n, i) => {
       const alpha = Math.min(1, n.timer / 0.4);
-      const y = 80 + i * 30;
-      const cx = this.renderer.width / 2;
-      // Background pill
+      // Special blushing notification: center of screen, large
+      const isBlushing = n.text.includes('blushing');
+      const fontSize = isBlushing ? 18 : 14;
+      const padding = isBlushing ? 32 : 24;
       const text = n.text;
-      const w = text.length * 9 + 24;
+      const w = text.length * (isBlushing ? 10.5 : 9) + padding;
+      const h = isBlushing ? 38 : 22;
+      const y = isBlushing ? cy - h / 2 : 80 + i * 30;
       this.renderer.ctx.save();
-      this.renderer.ctx.globalAlpha = alpha * 0.85;
-      this.renderer.ctx.fillStyle = c.bg || '#0a0a0a';
-      this.renderer.ctx.fillRect(cx - w / 2, y - 14, w, 22);
+      this.renderer.ctx.globalAlpha = alpha * 0.92;
+      this.renderer.ctx.fillStyle = isBlushing ? (c.primary || '#e63946') : (c.bg || '#0a0a0a');
+      if (this.renderer.ctx.roundRect) {
+        this.renderer.ctx.beginPath();
+        this.renderer.ctx.roundRect(cx - w / 2, y, w, h, isBlushing ? 8 : 3);
+        this.renderer.ctx.fill();
+      } else {
+        this.renderer.ctx.fillRect(cx - w / 2, y, w, h);
+      }
       this.renderer.ctx.globalAlpha = alpha;
-      this.renderer.drawText(text, cx, y, c.secondary, 14, 'center');
+      this.renderer.drawText(text, cx, y + h / 2 - fontSize / 2, isBlushing ? (c.bg || '#fff') : c.secondary, fontSize, 'center');
       this.renderer.ctx.restore();
     });
   }

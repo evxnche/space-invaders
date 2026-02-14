@@ -167,12 +167,14 @@ mpClose.addEventListener('click', () => {
 function sendHiMessage() {
   const content = msgInput.value.trim();
   if (!content) return;
-  if (!sb.isConfigured()) return;
 
-  sb.sendMessage(content);
+  if (sb.isConfigured()) sb.sendMessage(content);
   msgInput.value = '';
   msgConfirm.classList.remove('hidden');
   msgConfirm.style.opacity = '1';
+
+  // Easter egg: blushing notification
+  sendHiEasterEgg();
 
   setTimeout(() => {
     msgConfirm.style.transition = 'opacity 0.5s';
@@ -193,17 +195,12 @@ document.querySelectorAll('input').forEach(el => {
   el.addEventListener('keyup', (e) => e.stopPropagation());
 });
 
-// --- "built by evan" footer 7-click easter egg ---
-// Canvas click listener — check if click is in footer region (bottom 30px)
-canvas.addEventListener('click', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-  const cy = (e.clientY - rect.top) * scaleY;
-  if (cy > canvas.height - 30) {
-    game.onFooterClick();
-  }
-});
+// --- "say hi to evan" message → blushing easter egg ---
+function sendHiEasterEgg() {
+  game.audio.init();
+  game.audio.secretJingle();
+  game.pushNotification("i'm blushing already, stop :))", 2);
+}
 
 // --- Game Loop ---
 let lastTime = 0;
